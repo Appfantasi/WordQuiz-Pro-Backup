@@ -63,11 +63,7 @@ jobs:
       - name: Scarica il codice
         uses: actions/checkout@v4
 
-      - name: Controlla segreto di firma
-        env:
-          KS: ${{ secrets.KEYSTORE_BASE64 }}
-        run: |
-          [ -n "$KS" ] || { echo "::error::Manca il secret KEYSTORE_BASE64"; exit 1; }
+      
 
       - name: Installa Node.js
         uses: actions/setup-node@v4
@@ -98,28 +94,17 @@ jobs:
       - name: Sincronizza Capacitor
         run: npx cap sync android
 
-      - name: Compila APK
-        run: cd android && chmod +x gradlew && ./gradlew assembleRelease --no-daemon
+      - name: Compila APK di prova
+        run: cd android && chmod +x gradlew && ./gradlew assembleDebug --no-daemon
 
-      - name: Allinea e firma APK
-        env:
-          KEYSTORE_BASE64: ${{ secrets.KEYSTORE_BASE64 }}
-          KS_PASS: ${{ secrets.KEYSTORE_PASSWORD }}
-          KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
-        run: |
-          echo "$KEYSTORE_BASE64" | base64 -d > "$RUNNER_TEMP/ks.keystore"
-          BT=$(ls -d "$ANDROID_HOME"/build-tools/* | sort -V | tail -1)
-          UNSIGNED=$(ls android/app/build/outputs/apk/release/*.apk | head -1)
-          "$BT/zipalign" -p -f 4 "$UNSIGNED" aligned.apk
-          "$BT/apksigner" sign --ks "$RUNNER_TEMP/ks.keystore" --ks-key-alias "$KEY_ALIAS" \
-            --ks-pass env:KS_PASS --key-pass env:KS_PASS --out WordQuizPro.apk aligned.apk
-          "$BT/apksigner" verify --print-certs WordQuizPro.apk
+      
 
-      - name: Carica APK
+      - name: Carica APK Android di prova
         uses: actions/upload-artifact@v4
         with:
           name: WordQuizPro-apk
-          path: WordQuizPro.apk
+          path: android/app/build/outputs/apk/debug/app-debug.apk
+          if-no-files-found: error
 
   windows:
     runs-on: windows-latest
