@@ -125,6 +125,7 @@ jobs:
     runs-on: windows-latest
     env:
       CSC_IDENTITY_AUTO_DISCOVERY: "false"
+
     steps:
       - name: Scarica il codice
         uses: actions/checkout@v4
@@ -133,15 +134,23 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: 20
+          cache: npm
 
       - name: Installa dipendenze
         run: npm install
 
+      - name: Genera bundle della sintesi vocale
+        run: npm run build:tts
+
+      - name: Verifica Electron
+        run: npx electron --version
+
       - name: Compila Windows
-        run: npm run win
+        run: npx electron-builder --win --x64 --publish never
 
       - name: Carica programmi Windows
         uses: actions/upload-artifact@v4
         with:
-          name: WordQuizPro-windows
+          name: WordQuizPro-Windows
           path: dist/*.exe
+          if-no-files-found: error
